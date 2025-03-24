@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fingerprint Attendance</title>
+</head>
+<body>
+    <h2>Fingerprint Attendance System</h2>
+    <button id="register">Register Fingerprint</button>
+    <button id="authenticate">Mark Attendance</button>
+    <p id="status"></p>
+
+    <script>
+        const statusText = document.getElementById("status");
+
+        async function registerFingerprint() {
+            try {
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        rp: { name: "Attendance System" },
+                        user: {
+                            id: new Uint8Array(16),
+                            name: "student@example.com",
+                            displayName: "Student Name"
+                        },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                        authenticatorSelection: { authenticatorAttachment: "platform" },
+                        timeout: 60000,
+                        attestation: "direct"
+                    }
+                });
+                statusText.textContent = "Fingerprint registered successfully!";
+            } catch (err) {
+                statusText.textContent = "Error: " + err.message;
+            }
+        }
+
+        async function authenticateFingerprint() {
+            try {
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        allowCredentials: [{ type: "public-key", id: new Uint8Array(16) }],
+                        timeout: 60000
+                    }
+                });
+                statusText.textContent = "Attendance marked successfully!";
+                sendAttendance();
+            } catch (err) {
+                statusText.textContent = "Error: " + err.message;
+            }
+        }
+
+        function sendAttendance() {
+            fetch("AKfycbza7B8eWk6CcTtVdV25j3pDPJkyubUdtO6B7FElKeQ", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student: "student@example.com", status: "Present" })
+            })
+            .then(response => response.text())
+            .then(data => { statusText.textContent = "Attendance recorded in Google Sheets!"; })
+            .catch(error => { statusText.textContent = "Error sending data: " + error.message; });
+        }
+
+        document.getElementById("register").addEventListener("click", registerFingerprint);
+        document.getElementById("authenticate").addEventListener("click", authenticateFingerprint);
+    </script>
+</body>
+</html>
